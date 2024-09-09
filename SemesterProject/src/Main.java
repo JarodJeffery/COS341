@@ -20,11 +20,10 @@ public class Main {
         lexer = new Lexer(input);
         tokens = lexer.tokenize();
         // // Create a parser and parse the tokens
-        Parser parser = new Parser(tokens);
-        System.out.println(parser.toString());
-        // Parser.ProgramNode program = parser.parse();
+        RecSPLParser.Parser parser = new RecSPLParser.Parser(tokens);
+        ProgramNode program = parser.parse();
         // Optionally, print the parsed program or process the AST
-        // System.out.println("Parsed program successfully!");
-        // System.out.println(program);
+        System.out.println("Parsed program successfully!");
+        System.out.println(program);
     }
 }
