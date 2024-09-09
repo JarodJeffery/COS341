@@ -13,14 +13,17 @@ public class Main {
             System.out.println(token);
         }
 
+        System.out.println("\n\n\n\n");
+
         // Example input based on your grammar
-        // String input1 = "main begin V_x = 42; print V_x end";
-        // Lexer lexer1 = new Lexer(input1);
-        // List<Token> tokens1 = lexer1.tokenize();
+        input = "main begin V_x = 42; print V_x end";
+        lexer = new Lexer(input);
+        tokens = lexer.tokenize();
         // // Create a parser and parse the tokens
-        // Parser parser = new Parser(tokens1);
+        Parser parser = new Parser(tokens);
+        System.out.println(parser.toString());
         // Parser.ProgramNode program = parser.parse();
-        // // Optionally, print the parsed program or process the AST
+        // Optionally, print the parsed program or process the AST
         // System.out.println("Parsed program successfully!");
         // System.out.println(program);
     }
