@@ -33,6 +33,18 @@ public class Parser {
         }
     }
 
+    public ProgramNode parse() {
+        // Assuming that the first token should be `main`
+        match(RecSPLLexer.TokenType.MAIN); // Match 'main'
+
+        ASTNode globalVars = parseASTGlobalVars();
+        ASTNode algorithm = parseASTAlgorithm();
+        ASTNode functions = parseASTFunctions();
+
+        // Construct and return the root node of the AST
+        return new ProgramNode(globalVars, algorithm, functions);
+    }
+
     // Main parsing method for the program (PROG ::= main GLOBVARS ALGO FUNCTIONS)
     public ASTNode parseProgram() {
         match(RecSPLLexer.TokenType.MAIN);  // Match 'main'
@@ -232,6 +244,63 @@ public class Parser {
             return new BinaryOpNode(binopType, arg1, arg2);
         } else {
             throw new RuntimeException("Unexpected operation token: " + currentToken().getType());
+        }
+    }
+
+    private ASTNode parseASTGlobalVars() {
+        if (check(RecSPLLexer.TokenType.NUM) || check(RecSPLLexer.TokenType.TEXT)) {
+            // Parse global variables
+            // Example implementation
+            ASTNode var = parseVarDecl();
+            ASTNode moreVars = parseASTGlobalVars(); // Recursively parse more variables
+            return new GlobalVarsNode(var, moreVars); // Assume `GlobalVarsNode` is defined
+        }
+        return new EmptyNode(); // Assuming `EmptyNode` represents no global variables
+    }
+
+    private ASTNode parseASTAlgorithm() {
+        match(RecSPLLexer.TokenType.BEGIN);
+        ASTNode instructions = parseInstructions(); // Implement `parseInstructions` as needed
+        match(RecSPLLexer.TokenType.END);
+        return new AlgorithmNode(instructions); // Assume `AlgorithmNode` is defined
+    }
+
+    private ASTNode parseASTFunctions() {
+        if (check(RecSPLLexer.TokenType.FTYPE_NUM) || check(RecSPLLexer.TokenType.FTYPE_VOID)) {
+            // Parse functions
+            ASTNode function = parseFunction();
+            ASTNode moreFunctions = parseFunctions(); // Recursively parse more functions
+            return new FunctionsNode(function, moreFunctions); // Assume `FunctionsNode` is defined
+        }
+        return new EmptyNode(); // Assuming `EmptyNode` represents no functions
+    }
+
+    public class ProgramNode {
+        private ASTNode globalVars;
+        private ASTNode algorithm;
+        private ASTNode functions;
+
+        public ProgramNode(ASTNode globalVars, ASTNode algorithm, ASTNode functions) {
+            this.globalVars = globalVars;
+            this.algorithm = algorithm;
+            this.functions = functions;
+        }
+
+        public ASTNode getGlobalVars() {
+            return globalVars;
+        }
+
+        public ASTNode getAlgorithm() {
+            return algorithm;
+        }
+
+        public ASTNode getFunctions() {
+            return functions;
+        }
+
+        @Override
+        public String toString() {
+            return "ProgramNode(globalVars: " + globalVars + ", algorithm: " + algorithm + ", functions: " + functions + ")";
         }
     }
 }

@@ -1,2 +1,3 @@
-package PACKAGE_NAME;public class ASTNode {
+// Base class for AST Nodes
+public class ASTNode {
 }

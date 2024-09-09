@@ -1,2 +1,5 @@
-package PACKAGE_NAME;public class ConstantNode {
+public class ConstantNode extends ASTNode {
+    public ConstantNode(String value) {
+        super();
+    }
 }
