@@ -1,49 +1,49 @@
-import java.util.ArrayList;
-import java.util.List;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Lexer {
+class Lexer {
 
     private final String input;
-    private final List<Token> tokens;
-    private int currentPos = 0;
+    private int pos;
+    private Token currentToken;
 
     public Lexer(String input) {
         this.input = input;
-        this.tokens = new ArrayList<>();
+        this.pos = 0;
+        this.currentToken = nextToken();
     }
 
-    public List<Token> tokenize() {
-        while (currentPos < input.length()) {
-            boolean matched = false;
+    public Token getCurrentToken() {
+        return currentToken;
+    }
 
-            // Skip whitespaces
-            if (Character.isWhitespace(input.charAt(currentPos))) {
-                currentPos++;
-                continue;
+    public Token nextToken() {
+        if (pos >= input.length()) {
+            return new Token(Token.TokenType.EOF, "");
+        }
+
+        for (Token.TokenType type : Token.TokenType.values()) {
+            if (type == Token.TokenType.EOF) {
+                continue;  // Skip EOF pattern check
             }
+            Pattern pattern = Pattern.compile("^" + type.getPattern());
+            Matcher matcher = pattern.matcher(input.substring(pos));
 
-            for (RecSPLLexer.TokenType tokenType : RecSPLLexer.TokenType.values()) {
-                Pattern pattern = Pattern.compile("^" + tokenType.pattern);
-                Matcher matcher = pattern.matcher(input.substring(currentPos));
-
-                if (matcher.find()) {
-                    String lexeme = matcher.group();
-                    tokens.add(new Token(tokenType, lexeme));
-                    currentPos += lexeme.length();
-                    matched = true;
-                    break;
-                }
-            }
-
-            if (!matched) {
-                throw new RuntimeException("Unexpected character at position " + currentPos + ": " + input.charAt(currentPos));
+            if (matcher.find()) {
+                String tokenValue = matcher.group();
+                pos += tokenValue.length();
+                return new Token(type, tokenValue);
             }
         }
 
-        tokens.add(new Token(RecSPLLexer.TokenType.EOF, ""));
-        return tokens;
+        throw new RuntimeException("Unrecognized token at position " + pos);
+    }
+
+    public void advance() {
+        while (pos < input.length() && Character.isWhitespace(input.charAt(pos))) {
+            pos++;
+        }
+        currentToken = nextToken();
     }
 }
-
