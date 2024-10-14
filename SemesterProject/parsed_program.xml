@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Program>
+    <MainBlock>
+        <Main/>
+        <GlobalVariables>
+            <NumType/>
+            <VariableName>V_x</VariableName>
+            <TextType/>
+            <VariableName>V_y</VariableName>
+        </GlobalVariables>
+        <Algorithm>
+            <Command type="Skip"/>
+        </Algorithm>
+    </MainBlock>
+</Program>
