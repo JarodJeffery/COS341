@@ -8,9 +8,9 @@ public class Compiler {
         parser.parseProgram();
         try {
             CodeGenerator generator = new CodeGenerator("parsed_program.xml");
-            generator.generateJavaCode();
-            generator.writeJavaFile("GeneratedProgram.java");
-            System.out.println("Java code generated successfully.");
+            generator.generateBasicCode();
+            generator.writeBasicFile("GeneratedProgram.bas");
+            System.out.println("BASIC code generated successfully.");
         } catch (Exception e) {
             e.printStackTrace();
         }
