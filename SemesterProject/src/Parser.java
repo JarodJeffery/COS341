@@ -141,14 +141,22 @@ public class Parser {
     }
 
     private void parseInstruc(Element parent) throws Exception {
-        if (getCurrentToken().type == Token.TokenType.SKIP || getCurrentToken().type == Token.TokenType.PRINT || getCurrentToken().type == Token.TokenType.VNAME || getCurrentToken().type == Token.TokenType.IF) {
-            parseCommand(parent);
-            while (getCurrentToken().type == Token.TokenType.SEMICOLON) {
-                eat(Token.TokenType.SEMICOLON);
-                parseCommand(parent);
+        while (true) { // Loop to parse multiple instructions
+            if (getCurrentToken().type == Token.TokenType.SKIP ||
+                    getCurrentToken().type == Token.TokenType.HALT ||
+                    getCurrentToken().type == Token.TokenType.PRINT ||
+                    getCurrentToken().type == Token.TokenType.VNAME ||
+                    getCurrentToken().type == Token.TokenType.IF) {
+
+                parseCommand(parent); // Call parseCommand for each recognized command
+            } else if (getCurrentToken().type == Token.TokenType.END) {
+                break; // Exit on END token
+            } else {
+                break; // Break the loop if no valid instruction is found
             }
         }
     }
+
 
     private void parseCommand(Element parent) throws Exception {
         Token currentToken = getCurrentToken();
@@ -163,11 +171,24 @@ public class Parser {
             commandElement.setAttribute("type", "Halt");
             parent.appendChild(commandElement);
         } else if (currentToken.type == Token.TokenType.PRINT) {
-            eat(Token.TokenType.PRINT);
-            Element commandElement = xmlDocument.createElement("Command");
-            commandElement.setAttribute("type", "Print");
-            parent.appendChild(commandElement);
-            parseAtomic(commandElement);
+            eat(Token.TokenType.PRINT); // Eat the PRINT token
+            Element commandElement = xmlDocument.createElement("Command"); // Create Command element
+            commandElement.setAttribute("type", "Print"); // Set the type attribute
+
+            // Check for atomic value to print
+            if (getCurrentToken().type == Token.TokenType.NUMBER) {
+                Element atomicElement = xmlDocument.createElement("Atomic"); // Create Atomic element
+                atomicElement.setAttribute("type", "NumberLiteral"); // Set atomic type
+                atomicElement.setTextContent(getCurrentToken().value); // Set the value for the atomic element
+                commandElement.appendChild(atomicElement); // Append atomic element to command
+                eat(Token.TokenType.NUMBER); // Eat the NUMBER token
+            }
+
+            if (getCurrentToken().type == Token.TokenType.SEMICOLON) {
+                eat(Token.TokenType.SEMICOLON); // Eat the SEMICOLON token
+            }
+
+            parent.appendChild(commandElement); // Append command element to the parent
         } else if (currentToken.type == Token.TokenType.VNAME) {
             Element commandElement = xmlDocument.createElement("Command");
             commandElement.setAttribute("type", "Assignment");
@@ -178,12 +199,11 @@ public class Parser {
             commandElement.setAttribute("type", "IfStatement");
             parent.appendChild(commandElement);
             parseBranch(commandElement);
-        } else if(currentToken.type == Token.TokenType.END){
-            return;
-        }else {
+        } else {
             throw new Exception("Unrecognized command type: " + currentToken);
         }
     }
+
 
 
     private void parseAssign(Element parent) throws Exception {

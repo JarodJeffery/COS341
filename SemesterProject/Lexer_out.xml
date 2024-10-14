@@ -29,8 +29,12 @@
     <value>begin</value>
   </token>
   <token>
-    <type>SKIP</type>
-    <value>skip</value>
+    <type>PRINT</type>
+    <value>print</value>
+  </token>
+  <token>
+    <type>NUMBER</type>
+    <value>1</value>
   </token>
   <token>
     <type>SEMICOLON</type>

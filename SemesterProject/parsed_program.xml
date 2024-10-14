@@ -9,7 +9,9 @@
             <VariableName>V_y</VariableName>
         </GlobalVariables>
         <Algorithm>
-            <Command type="Skip"/>
+            <Command type="Print">
+                <Atomic type="NumberLiteral">1</Atomic>
+            </Command>
         </Algorithm>
     </MainBlock>
 </Program>
