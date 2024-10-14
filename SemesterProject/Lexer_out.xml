@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tokens>
+  <token>
+    <type>MAIN</type>
+    <value>main</value>
+  </token>
+  <token>
+    <type>NUM</type>
+    <value>num</value>
+  </token>
+  <token>
+    <type>VNAME</type>
+    <value>V_x</value>
+  </token>
+  <token>
+    <type>COMMA</type>
+    <value>,</value>
+  </token>
+  <token>
+    <type>TEXT</type>
+    <value>text</value>
+  </token>
+  <token>
+    <type>VNAME</type>
+    <value>V_y</value>
+  </token>
+  <token>
+    <type>BEGIN</type>
+    <value>begin</value>
+  </token>
+  <token>
+    <type>SKIP</type>
+    <value>skip</value>
+  </token>
+  <token>
+    <type>SEMICOLON</type>
+    <value>;</value>
+  </token>
+  <token>
+    <type>END</type>
+    <value>end</value>
+  </token>
+  <token>
+    <type>EOF</type>
+    <value></value>
+  </token>
+</tokens>

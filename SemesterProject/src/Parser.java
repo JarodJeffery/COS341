@@ -1,269 +1,313 @@
-public class Parser {
-    private final Lexer lexer;
-    private Token currentToken;
+import org.w3c.dom.*;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.File;
 
-    public Parser(Lexer lexer) {
-        this.lexer = lexer;
-        this.currentToken = lexer.getCurrentToken();
+public class Parser {
+    private NodeList tokenNodes;  // List of tokens from the XML
+    private int currentTokenIndex; // Pointer to current token in NodeList
+    private Document xmlDocument;  // XML Document for output
+    private Element rootElement;   // Root element for output XML
+
+    // Constructor to initialize the parser with tokens from an XML file
+    public Parser(String lexerXmlFile) throws Exception {
+        // Load the Lexer XML
+        loadLexerXml(lexerXmlFile);
+
+        // Initialize XML document for output
+        initializeXmlOutput();
     }
 
-    // Utility methods to help with token matching and error checking
-    private void eat(Token.TokenType type) throws Exception {
-        if (currentToken.type == type) {
-            lexer.advance();
-            currentToken = lexer.getCurrentToken();
+    // Loads and parses the XML file outputted by the Lexer
+    private void loadLexerXml(String lexerXmlFile) throws Exception {
+        File inputFile = new File(lexerXmlFile);
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(inputFile);
+        doc.getDocumentElement().normalize();
+
+        // Extract all token elements
+        tokenNodes = doc.getElementsByTagName("token");
+        currentTokenIndex = 0;  // Start at the first token
+    }
+
+    // Initialize the XML output structure
+    private void initializeXmlOutput() throws Exception {
+        DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+        xmlDocument = docBuilder.newDocument();
+        rootElement = xmlDocument.createElement("Program");
+        xmlDocument.appendChild(rootElement);
+    }
+
+    // Fetch the current token from the NodeList
+    private Token getCurrentToken() throws Exception {
+        if (currentTokenIndex < tokenNodes.getLength()) {
+            Element tokenElement = (Element) tokenNodes.item(currentTokenIndex);
+            String tokenType = tokenElement.getElementsByTagName("type").item(0).getTextContent();
+            String tokenValue = tokenElement.getElementsByTagName("value").item(0).getTextContent();
+            return new Token(Token.TokenType.valueOf(tokenType), tokenValue);
         } else {
-            throw new Exception("Syntax Error: Expected " + type + ", but found " + currentToken);
+            return new Token(Token.TokenType.EOF, ""); // Return EOF token if no more tokens are available
         }
     }
 
-    // Main entry point of the parser
-    public void parseProgram() throws Exception {
-        parseMain();
-        parseGlobVars();
-        parseAlgo();
-        parseFunctions();
+    // Advance to the next token in the NodeList
+    private void advanceToken() {
+        currentTokenIndex++;
     }
 
-    // Parsing for MAIN token
-    private void parseMain() throws Exception {
+    // Main entry point for parsing
+    public void parseProgram() throws Exception {
+        Element mainElement = xmlDocument.createElement("MainBlock");
+        rootElement.appendChild(mainElement);
+
+        parseMain(mainElement);
+        parseGlobVars(mainElement);
+        parseAlgo(mainElement);
+        parseFunctions(mainElement);
+
+        // Write the parsed structure to an XML file
+        writeXMLToFile("parsed_program.xml");
+    }
+
+    // Method to eat a token and advance if it matches the expected type
+    private void eat(Token.TokenType expectedType) throws Exception {
+        Token currentToken = getCurrentToken();
+        if (currentToken.type == expectedType) {
+            advanceToken();
+        } else {
+            throw new Exception("Syntax Error: Expected " + expectedType + ", but found " + currentToken);
+        }
+    }
+
+    // Parsing the MAIN block
+    private void parseMain(Element parent) throws Exception {
         eat(Token.TokenType.MAIN);
+        Element mainElement = xmlDocument.createElement("Main");
+        parent.appendChild(mainElement);
     }
 
     // Parsing global variables
-    private void parseGlobVars() throws Exception {
-        if (currentToken.type == Token.TokenType.NUM || currentToken.type == Token.TokenType.TEXT) {
-            parseVType();
-            eat(Token.TokenType.VNAME);
-            while (currentToken.type == Token.TokenType.COMMA) {
-                eat(Token.TokenType.COMMA);
-                parseVType();
-                eat(Token.TokenType.VNAME);
+    private void parseGlobVars(Element parent) throws Exception {
+        Element globalsElement = xmlDocument.createElement("GlobalVariables");
+        parent.appendChild(globalsElement);
+
+        while (getCurrentToken().type == Token.TokenType.NUM || getCurrentToken().type == Token.TokenType.TEXT) {
+            parseVType(globalsElement); // Capture the variable type
+            Element vNameElement = xmlDocument.createElement("VariableName"); // Create an element for the variable name
+            vNameElement.setTextContent(getCurrentToken().value); // Set the variable name value
+            globalsElement.appendChild(vNameElement); // Append the variable name to globalsElement
+            eat(Token.TokenType.VNAME); // Move to the next token
+
+            while (getCurrentToken().type == Token.TokenType.COMMA) {
+                eat(Token.TokenType.COMMA); // Consume the comma
+                parseVType(globalsElement); // Capture the next variable type
+                vNameElement = xmlDocument.createElement("VariableName"); // Create a new element for the variable name
+                vNameElement.setTextContent(getCurrentToken().value); // Set the variable name value
+                globalsElement.appendChild(vNameElement); // Append the variable name to globalsElement
+                eat(Token.TokenType.VNAME); // Move to the next token
             }
         }
     }
 
-    private void parseVType() throws Exception {
-        if (currentToken.type == Token.TokenType.NUM) {
+
+    private void parseVType(Element parent) throws Exception {
+        if (getCurrentToken().type == Token.TokenType.NUM) {
             eat(Token.TokenType.NUM);
-        } else if (currentToken.type == Token.TokenType.TEXT) {
+            Element numElement = xmlDocument.createElement("NumType");
+            parent.appendChild(numElement);
+        } else if (getCurrentToken().type == Token.TokenType.TEXT) {
             eat(Token.TokenType.TEXT);
+            Element textElement = xmlDocument.createElement("TextType");
+            parent.appendChild(textElement);
         } else {
-            throw new Exception("Syntax Error: Expected variable type, found " + currentToken);
+            throw new Exception("Syntax Error: Expected variable type, found " + getCurrentToken());
         }
     }
 
     // Parsing algorithm block
-    private void parseAlgo() throws Exception {
+    private void parseAlgo(Element parent) throws Exception {
         eat(Token.TokenType.BEGIN);
-        parseInstruc();
+        Element algoElement = xmlDocument.createElement("Algorithm");
+        parent.appendChild(algoElement);
+        parseInstruc(algoElement);
         eat(Token.TokenType.END);
     }
 
-    private void parseInstruc() throws Exception {
-        if (currentToken.type == Token.TokenType.SKIP || currentToken.type == Token.TokenType.HALT || currentToken.type == Token.TokenType.PRINT || currentToken.type == Token.TokenType.VNAME || currentToken.type == Token.TokenType.IF) {
-            parseCommand();
-            while (currentToken.type == Token.TokenType.SEMICOLON) {
+    private void parseInstruc(Element parent) throws Exception {
+        if (getCurrentToken().type == Token.TokenType.SKIP || getCurrentToken().type == Token.TokenType.PRINT || getCurrentToken().type == Token.TokenType.VNAME || getCurrentToken().type == Token.TokenType.IF) {
+            parseCommand(parent);
+            while (getCurrentToken().type == Token.TokenType.SEMICOLON) {
                 eat(Token.TokenType.SEMICOLON);
-                parseCommand();
+                parseCommand(parent);
             }
         }
     }
 
-    private void parseCommand() throws Exception {
+    private void parseCommand(Element parent) throws Exception {
+        Token currentToken = getCurrentToken();
         if (currentToken.type == Token.TokenType.SKIP) {
             eat(Token.TokenType.SKIP);
+            Element commandElement = xmlDocument.createElement("Command");
+            commandElement.setAttribute("type", "Skip");
+            parent.appendChild(commandElement);
         } else if (currentToken.type == Token.TokenType.HALT) {
             eat(Token.TokenType.HALT);
+            Element commandElement = xmlDocument.createElement("Command");
+            commandElement.setAttribute("type", "Halt");
+            parent.appendChild(commandElement);
         } else if (currentToken.type == Token.TokenType.PRINT) {
             eat(Token.TokenType.PRINT);
-            parseAtomic();
+            Element commandElement = xmlDocument.createElement("Command");
+            commandElement.setAttribute("type", "Print");
+            parent.appendChild(commandElement);
+            parseAtomic(commandElement);
         } else if (currentToken.type == Token.TokenType.VNAME) {
-            parseAssign();
+            Element commandElement = xmlDocument.createElement("Command");
+            commandElement.setAttribute("type", "Assignment");
+            parent.appendChild(commandElement);
+            parseAssign(commandElement);
         } else if (currentToken.type == Token.TokenType.IF) {
-            parseBranch();
-        } else {
-            System.out.println("Instruct is null");
+            Element commandElement = xmlDocument.createElement("Command");
+            commandElement.setAttribute("type", "IfStatement");
+            parent.appendChild(commandElement);
+            parseBranch(commandElement);
+        } else if(currentToken.type == Token.TokenType.END){
+            return;
+        }else {
+            throw new Exception("Unrecognized command type: " + currentToken);
         }
     }
 
-    private void parseAssign() throws Exception {
+
+    private void parseAssign(Element parent) throws Exception {
         eat(Token.TokenType.VNAME);
-        if (currentToken.type == Token.TokenType.ASSIGNMENT) {
+        Element assignElement = xmlDocument.createElement("Assignment");
+        parent.appendChild(assignElement);
+
+        if (getCurrentToken().type == Token.TokenType.ASSIGNMENT) {
             eat(Token.TokenType.ASSIGNMENT);
-            if (currentToken.type == Token.TokenType.INPUT) {
+            if (getCurrentToken().type == Token.TokenType.INPUT) {
                 eat(Token.TokenType.INPUT);
+                Element inputElement = xmlDocument.createElement("Input");
+                assignElement.appendChild(inputElement);
             } else {
-                parseTerm();
+                parseTerm(assignElement);
             }
         }
     }
 
-    private void parseBranch() throws Exception {
+    private void parseBranch(Element parent) throws Exception {
         eat(Token.TokenType.IF);
-        parseCond();
+        Element branchElement = xmlDocument.createElement("IfStatement");
+        parent.appendChild(branchElement);
+
+        parseCond(branchElement);
         eat(Token.TokenType.THEN);
-        parseAlgo();
+        parseAlgo(branchElement);
         eat(Token.TokenType.ELSE);
-        parseAlgo();
+        parseAlgo(branchElement);
     }
 
-    private void parseTerm() throws Exception {
-        if (currentToken.type == Token.TokenType.VNAME || currentToken.type == Token.TokenType.NUMBER || currentToken.type == Token.TokenType.STRING) {
-            parseAtomic();
-        } else if (currentToken.type == Token.TokenType.FNAME) {
-            parseCall();
-        } else if (currentToken.type == Token.TokenType.UNOP || currentToken.type == Token.TokenType.OPERATOR) {
-            parseOp();
-        } else {
-            throw new Exception("Syntax Error: Unexpected token in TERM, found " + currentToken);
-        }
+    private void parseTerm(Element parent) throws Exception {
+        Element termElement = xmlDocument.createElement("Term");
+        parent.appendChild(termElement);
+        parseAtomic(termElement);
+        parseOp(termElement);
+        parseAtomic(termElement);
     }
 
-    private void parseAtomic() throws Exception {
+    private void parseAtomic(Element parent) throws Exception {
+        Token currentToken = getCurrentToken();
+        Element atomicElement = xmlDocument.createElement("Atomic");
+        parent.appendChild(atomicElement);
+
         if (currentToken.type == Token.TokenType.VNAME) {
             eat(Token.TokenType.VNAME);
-        } else if (currentToken.type == Token.TokenType.NUMBER) {
-            eat(Token.TokenType.NUMBER);
+            atomicElement.setAttribute("type", "Variable");
         } else if (currentToken.type == Token.TokenType.STRING) {
             eat(Token.TokenType.STRING);
-        } else {
-            throw new Exception("Syntax Error: Expected ATOMIC, found " + currentToken);
+            atomicElement.setAttribute("type", "StringLiteral");
+        } else if (currentToken.type == Token.TokenType.NUMBER) {
+            eat(Token.TokenType.NUMBER);
+            atomicElement.setAttribute("type", "NumberLiteral");
+        } else if (currentToken.type == Token.TokenType.CALL) {
+            parseCall(atomicElement);
         }
     }
 
-    private void parseCall() throws Exception {
+    private void parseCall(Element parent) throws Exception {
+        eat(Token.TokenType.CALL);
+        Element callElement = xmlDocument.createElement("FunctionCall");
+        parent.appendChild(callElement);
+
         eat(Token.TokenType.FNAME);
         eat(Token.TokenType.LPAREN);
-        parseAtomic();
+        parseAtomic(callElement);
         eat(Token.TokenType.COMMA);
-        parseAtomic();
-        eat(Token.TokenType.COMMA);
-        parseAtomic();
+        parseAtomic(callElement);
         eat(Token.TokenType.RPAREN);
     }
 
-    private void parseOp() throws Exception {
-        if (currentToken.type == Token.TokenType.UNOP) {
+    private void parseOp(Element parent) throws Exception {
+        if (getCurrentToken().type == Token.TokenType.UNOP) {
             eat(Token.TokenType.UNOP);
-            eat(Token.TokenType.LPAREN);
-            parseArg();
-            eat(Token.TokenType.RPAREN);
-        } else if (currentToken.type == Token.TokenType.OPERATOR) {
+            Element opElement = xmlDocument.createElement("UnaryOp");
+            parent.appendChild(opElement);
+        } else if (getCurrentToken().type == Token.TokenType.OPERATOR) {
             eat(Token.TokenType.OPERATOR);
-            eat(Token.TokenType.LPAREN);
-            parseArg();
-            eat(Token.TokenType.COMMA);
-            parseArg();
-            eat(Token.TokenType.RPAREN);
+            Element opElement = xmlDocument.createElement("BinaryOp");
+            parent.appendChild(opElement);
         }
     }
 
-    private void parseArg() throws Exception {
-        if (currentToken.type == Token.TokenType.VNAME || currentToken.type == Token.TokenType.NUMBER || currentToken.type == Token.TokenType.STRING) {
-            parseAtomic();
-        } else if (currentToken.type == Token.TokenType.UNOP || currentToken.type == Token.TokenType.OPERATOR) {
-            parseOp();
-        } else {
-            throw new Exception("Syntax Error: Expected ARG, found " + currentToken);
+    private void parseCond(Element parent) throws Exception {
+        Element condElement = xmlDocument.createElement("Condition");
+        parent.appendChild(condElement);
+        parseAtomic(condElement);
+        eat(Token.TokenType.OPERATOR);
+        parseAtomic(condElement);
+    }
+
+    // Parsing functions
+    private void parseFunctions(Element parent) throws Exception {
+        while (getCurrentToken().type == Token.TokenType.FNAME) {
+            parseFunc(parent);
         }
     }
 
-    private void parseCond() throws Exception {
-        if (currentToken.type == Token.TokenType.OPERATOR) {
-            parseSimple();
-        } else if (currentToken.type == Token.TokenType.UNOP) {
-            parseComposite();
-        } else {
-            throw new Exception("Syntax Error: Expected a condition, found " + currentToken);
-        }
-    }
-
-    private void parseSimple() throws Exception {
-        eat(Token.TokenType.OPERATOR); // for binary operators like 'eq', 'grt', etc.
-        eat(Token.TokenType.LPAREN);
-        parseAtomic();  // first atomic argument
-        eat(Token.TokenType.COMMA);
-        parseAtomic();  // second atomic argument
-        eat(Token.TokenType.RPAREN);
-    }
-
-    private void parseComposite() throws Exception {
-        if (currentToken.type == Token.TokenType.UNOP) {  // Unary operation (e.g., not)
-            eat(Token.TokenType.UNOP);
-            eat(Token.TokenType.LPAREN);
-            parseSimple();
-            eat(Token.TokenType.RPAREN);
-        } else if (currentToken.type == Token.TokenType.OPERATOR) {  // Binary operation (e.g., and, or)
-            eat(Token.TokenType.OPERATOR);
-            eat(Token.TokenType.LPAREN);
-            parseSimple();
-            eat(Token.TokenType.COMMA);
-            parseSimple();
-            eat(Token.TokenType.RPAREN);
-        } else {
-            throw new Exception("Syntax Error: Expected a composite condition, found " + currentToken);
-        }
-    }
-    private void parseFunctions() throws Exception {
-        if (currentToken.type == Token.TokenType.VOID || currentToken.type == Token.TokenType.NUM) {
-            parseDecl();
-            while (currentToken.type == Token.TokenType.VOID || currentToken.type == Token.TokenType.NUM) {
-                parseDecl();
-            }
-        }
-    }
-
-    private void parseDecl() throws Exception {
-        parseHeader();
-        parseBody();
-    }
-
-    private void parseHeader() throws Exception {
-        // Parse function type (e.g., num, void)
-        if (currentToken.type == Token.TokenType.VOID) {
-            eat(Token.TokenType.VOID);
-        } else if (currentToken.type == Token.TokenType.NUM) {
-            eat(Token.TokenType.NUM);
-        } else {
-            throw new Exception("Syntax Error: Expected function type (num or void), found " + currentToken);
-        }
-
-        // Parse function name
+    private void parseFunc(Element parent) throws Exception {
         eat(Token.TokenType.FNAME);
+        Element funcElement = xmlDocument.createElement("Function");
+        parent.appendChild(funcElement);
 
-        // Parse function parameters: (VNAME, VNAME, VNAME)
+        eat(Token.TokenType.FNAME);
         eat(Token.TokenType.LPAREN);
-        eat(Token.TokenType.VNAME);
+        parseAtomic(funcElement);
         eat(Token.TokenType.COMMA);
-        eat(Token.TokenType.VNAME);
-        eat(Token.TokenType.COMMA);
-        eat(Token.TokenType.VNAME);
+        parseAtomic(funcElement);
         eat(Token.TokenType.RPAREN);
+        parseAlgo(funcElement);
     }
 
-    private void parseBody() throws Exception {
-        eat(Token.TokenType.LBRACE);  // Prolog: '{'
+    // Method to write the final XML output to a file
+    private void writeXMLToFile(String fileName) {
+        try {
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            DOMSource source = new DOMSource(xmlDocument);
+            StreamResult result = new StreamResult(new File(fileName)); // Use the given filename
 
-        // Parse local variables: VTYP VNAME, VTYP VNAME, VTYP VNAME
-        parseLocVars();
-
-        // Parse function algorithm (ALGO)
-        parseAlgo();
-
-        eat(Token.TokenType.RBRACE);  // Epilogue: '}'
-
-        // Parse possible sub-functions
-        parseFunctions();  // Recursive parsing of sub-functions
-    }
-
-    private void parseLocVars() throws Exception {
-        for (int i = 0; i < 3; i++) {  // Expect exactly 3 local variables
-            parseVType();
-            eat(Token.TokenType.VNAME);
-            if (i < 2) {
-                eat(Token.TokenType.COMMA);
-            }
+            transformer.transform(source, result);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

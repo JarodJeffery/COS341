@@ -49,6 +49,7 @@ public class Token {
         this.value = value;
     }
 
+
     @Override
     public String toString() {
         return String.format("Token(%s, %s)", type.name(), value);
