@@ -1,57 +1,73 @@
 
 public class Token {
+  public enum TokenType {
+    MAIN("main"),
+    GLOBVARS("globalvars"),
+    NULLABLE("null"),
+    VTYPE("vtype"),
+    PROG("prog"),
+    ALGO("algo"),
+    FUNCTIONS("functions"),
+    BEGIN("begin"),
+    END("end"),
+    IF("if"),
+    THEN("then"),
+    ELSE("else"),
+    PRINT("print"),
+    RETURN("return"),
+    NUM("num"),
+    TEXT("text"),
+    SKIP("skip"),
+    VOID("void"), // Added for function return types
+    INPUT("\\binput\\b"),
+    HALT("halt"),
+    CALL("call"),
+    VNAME("V_[a-z]([a-z]|[0-9])*"), // user-defined variable names
+    FNAME("F_[a-z]([a-z]|[0-9])*"), // user-defined function names
+    STRING("\"[A-Z][a-z]*{0,7}\""), // short text strings
+    NUMBER("-?[0-9]+(\\.[0-9]+)?"), // numbers (integers or real numbers)
+    ASSIGNMENT("="), // assignment operators
+    INPUT_OPERATOR("<"),
+    BINOP("(or|and|eq|grt|add|sub|mul|div)"), // binary operators
+    UNOP("(not|sqrt)"), // unary operators
+    LPAREN("\\("), // Left parenthesis
+    RPAREN("\\)"), // Right parenthesis
+    COMMA(","), // Comma
+    SEMICOLON(";"), // Semicolon
+    LBRACE("\\{"), // Prologue (left brace)
+    RBRACE("\\}"), // Epilogue (right brace)
+    EOF(""); // End of file
 
-    enum TokenType {
-        MAIN("main"),
-        BEGIN("begin"),
-        END("end"),
-        NUM("num"),
-        TEXT("text"),
-        VOID("void"),
-        VNAME("V_[a-z]([a-z]|[0-9])*"), // user-defined variable names
-        FNAME("F_[a-z]([a-z]|[0-9])*"), // user-defined function names
-        STRING("\"[A-Z][a-z]{0,7}\""), // short text strings
-        NUMBER("-?[0-9]+(\\.[0-9]+)?"), // numbers (integers or real numbers)
-        ASSIGNMENT("<|="), // assignment operators
-        INPUT("input"), // input keyword
-        OPERATOR("(or|and|eq|grt|add|sub|mul|div)"), // binary operators
-        UNOP("(not|sqrt)"), // unary operators
-        IF("if"),
-        THEN("then"),
-        ELSE("else"),
-        PRINT("print"),
-        HALT("halt"),
-        SKIP("skip"),
-        CALL("call"),
-        LPAREN("\\("),
-        RPAREN("\\)"),
-        COMMA(","),
-        SEMICOLON(";"),
-        LBRACE("\\{"),
-        RBRACE("\\}"),
-        EOF(""); // end of file// end of file
+    public final String pattern;
 
-        private final String pattern;
-
-        TokenType(String pattern) {
-            this.pattern = pattern;
-        }
-
-        public String getPattern() {
-            return pattern;
-        }
-    }
-    public final TokenType type;
-    public final String value;
-
-    public Token(TokenType type, String value) {
-        this.type = type;
-        this.value = value;
+    TokenType(String pattern) {
+      this.pattern = pattern;
     }
 
-
-    @Override
-    public String toString() {
-        return String.format("Token(%s, %s)", type.name(), value);
+    public String getPattern() {
+      return pattern;
     }
+
+  }
+
+  private final TokenType type;
+  public final String value;
+
+  public Token(TokenType type, String value) {
+    this.type = type;
+    this.value = value;
+  }
+
+  public TokenType getType() {
+    return type;
+  }
+
+  public String getValue() {
+    return value;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("Token(%s, %s)", type, value);
+  }
 }

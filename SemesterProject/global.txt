@@ -1,0 +1,6 @@
+main
+num V_x, num V_y, text V_msg,
+begin
+    V_x = 5;
+    V_msg = "Hello" ;
+end

@@ -1,136 +1,157 @@
 import org.w3c.dom.*;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import javax.xml.parsers.*;
+import java.io.*;
 
 public class CodeGenerator {
-    private Document xmlDocument; // The parsed XML document
-    private StringBuilder basicCode; // StringBuilder to accumulate generated BASIC code
-    private int lineNumber; // To keep track of the current line number
+    private DocumentBuilderFactory factory;
+    private DocumentBuilder builder;
+    private Document document;
+    private PrintWriter writer;
 
-    // Constructor to initialize the code generator with the XML file
-    public CodeGenerator(String xmlFilePath) throws Exception {
-        loadXmlDocument(xmlFilePath);
-        basicCode = new StringBuilder();
-        lineNumber = 10; // Start line numbers at 10
-    }
-
-    // Load the XML document
-    private void loadXmlDocument(String xmlFilePath) throws Exception {
-        File inputFile = new File(xmlFilePath);
-        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-        xmlDocument = dBuilder.parse(inputFile);
-        xmlDocument.getDocumentElement().normalize();
-    }
-
-    // Main method to generate BASIC code
-    public void generateBasicCode() throws Exception {
-        Element mainBlock = (Element) xmlDocument.getElementsByTagName("MainBlock").item(0);
-        generateGlobalVariables(mainBlock);
-        generateAlgorithm(mainBlock); // No "main" method in BASIC
-    }
-
-    // Helper method to append a line of BASIC code with line numbers
-    private void appendLine(String codeLine) {
-        basicCode.append(lineNumber).append(" ").append(codeLine).append("\n");
-        lineNumber += 10; // Increment line number by 10
-    }
-
-    // Generate global variables (Note: BASIC doesn't require explicit declaration like Java)
-    private void generateGlobalVariables(Element mainBlock) throws Exception {
-        Element globalsElement = (Element) mainBlock.getElementsByTagName("GlobalVariables").item(0);
-        NodeList numTypes = globalsElement.getElementsByTagName("NumType");
-        NodeList textTypes = globalsElement.getElementsByTagName("TextType");
-
-        // Numeric variables
-        for (int i = 0; i < numTypes.getLength(); i++) {
-            String varName = globalsElement.getElementsByTagName("VariableName").item(i).getTextContent();
-            appendLine(varName + " = 0"); // Initialize numeric variables
-        }
-
-        // Text variables (add $ to their names)
-        for (int i = 0; i < textTypes.getLength(); i++) {
-            String varName = globalsElement.getElementsByTagName("VariableName").item(i + numTypes.getLength()).getTextContent();
-            appendLine(varName + "$ = \"\""); // Initialize text variables with $
+    public CodeGenerator(String xmlFilePath) {
+        try {
+            factory = DocumentBuilderFactory.newInstance();
+            builder = factory.newDocumentBuilder();
+            document = builder.parse(new File(xmlFilePath));
+            document.getDocumentElement().normalize();
+            writer = new PrintWriter(new FileWriter("bas_output.bas"));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
-    // Generate algorithm section
-    private void generateAlgorithm(Element mainBlock) throws Exception {
-        Element algorithmElement = (Element) mainBlock.getElementsByTagName("Algorithm").item(0);
-        NodeList commandNodes = algorithmElement.getElementsByTagName("Command");
-
-        for (int i = 0; i < commandNodes.getLength(); i++) {
-            Element command = (Element) commandNodes.item(i);
-            String commandType = command.getAttribute("type");
-            switch (commandType) {
-                case "Skip":
-                    appendLine("REM Skip command"); // BASIC uses REM for comments
-                    break;
-                case "Print":
-                    generatePrintCommand(command);
-                    break;
-                // Add cases for other command types as necessary
-                default:
-                    break;
-            }
+    public void generateBASIC() {
+        NodeList programNodes = document.getElementsByTagName("PROG");
+        for (int i = 0; i < programNodes.getLength(); i++) {
+            Element program = (Element) programNodes.item(i);
+            handleGlobalVars(program);
+            handleMainAlgorithm(program);
+            handleFunctions(program);
         }
-    }
-
-    // Generate code for Print command
-    private void generatePrintCommand(Element command) {
-        StringBuilder printLine = new StringBuilder("PRINT ");
-
-        // Assuming you can either print a variable name or a string
-        NodeList atomicNodes = command.getElementsByTagName("Atomic");
-        for (int j = 0; j < atomicNodes.getLength(); j++) {
-            Element atomic = (Element) atomicNodes.item(j);
-            String type = atomic.getAttribute("type");
-
-            if (type.equals("Variable")) {
-                // Variable printout
-                String varName = atomic.getTextContent(); // Get the variable name from the XML
-                if (isTextVariable(varName)) {
-                    varName += "$"; // Add $ for text variables
-                }
-                printLine.append(varName);
-            } else if (type.equals("StringLiteral")) {
-                // String literal printout
-                String stringValue = atomic.getTextContent();
-                printLine.append("\"").append(stringValue).append("\""); // Escape quotes for string literals
-            } else if (type.equals("NumberLiteral")) {
-                // Number literal printout
-                String numberValue = atomic.getTextContent();
-                printLine.append(numberValue); // Directly append the number value
-            }
-
-            if (j < atomicNodes.getLength() - 1) {
-                printLine.append(" + "); // Concatenate if there are multiple atomic elements
-            }
-        }
-
-        appendLine(printLine.toString()); // Add the PRINT line with line number
-    }
-
-    // Helper method to check if a variable is a text variable
-    private boolean isTextVariable(String varName) {
-        NodeList textTypes = xmlDocument.getElementsByTagName("TextType");
-        for (int i = 0; i < textTypes.getLength(); i++) {
-            String textVarName = textTypes.item(i).getTextContent();
-            if (textVarName.equals(varName)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Write generated BASIC code to a file
-    public void writeBasicFile(String fileName) throws IOException {
-        FileWriter writer = new FileWriter(fileName);
-        writer.write(basicCode.toString());
         writer.close();
+    }
+
+    private void handleGlobalVars(Element program) {
+        NodeList globalVars = program.getElementsByTagName("GLOBVARS");
+        if (globalVars.getLength() > 0) {
+            NodeList varList = ((Element) globalVars.item(0)).getChildNodes();
+            for (int j = 0; j < varList.getLength(); j++) {
+                Node varNode = varList.item(j);
+                if (varNode.getNodeType() == Node.ELEMENT_NODE) {
+                    Element varElement = (Element) varNode;
+                    String varType = getElementText(varElement, "VTYP");
+                    String varName = getElementText(varElement, "VNAME");
+                    if (varType != null && varName != null) {
+                        writer.println(varType.toUpperCase() + " " + varName + " = 0"); // Initialize global vars
+                    }
+                }
+            }
+            writer.println();
+        }
+    }
+
+    private void handleMainAlgorithm(Element program) {
+        NodeList algos = program.getElementsByTagName("ALGO");
+        if (algos.getLength() > 0) {
+            Element algo = (Element) algos.item(0);
+            writer.println("START"); // BASIC starting point
+            processInstructions(algo.getElementsByTagName("INSTRUC"));
+            writer.println("END"); // End of BASIC program
+        }
+    }
+
+    private void processInstructions(NodeList instructions) {
+        for (int i = 0; i < instructions.getLength(); i++) {
+            Node instrNode = instructions.item(i);
+            if (instrNode.getNodeType() == Node.ELEMENT_NODE) {
+                Element instrElement = (Element) instrNode;
+                NodeList commands = instrElement.getElementsByTagName("COMMAND");
+                for (int j = 0; j < commands.getLength(); j++) {
+                    Element command = (Element) commands.item(j);
+                    handleCommand(command);
+                }
+            }
+        }
+    }
+
+    private void handleCommand(Element command) {
+        if (command.getElementsByTagName("ASSIGN").getLength() > 0) {
+            handleAssignment(command.getElementsByTagName("ASSIGN").item(0));
+        } else if (command.getElementsByTagName("PRINT").getLength() > 0) {
+            handlePrint(command.getElementsByTagName("PRINT").item(0));
+        } else if (command.getElementsByTagName("BRANCH").getLength() > 0) {
+            handleBranch(command.getElementsByTagName("BRANCH").item(0));
+        } else if (command.getElementsByTagName("HALT").getLength() > 0) {
+            writer.println("HALT");
+        } else if (command.getElementsByTagName("SKIP").getLength() > 0) {
+            writer.println("CONTINUE");
+        }
+    }
+
+    private void handleAssignment(Node assignmentNode) {
+        Element assignment = (Element) assignmentNode;
+        String varName = getElementText(assignment, "VNAME");
+        String value = getElementText(assignment, "ATOMIC"); // Should be a valid value or expression
+        if (varName != null && value != null) {
+            writer.println(varName + " = " + value);
+        }
+    }
+
+    private void handlePrint(Node printNode) {
+        Element print = (Element) printNode;
+        String value = getElementText(print, "ATOMIC"); // Get the atomic value to print
+        if (value != null) {
+            writer.println("PRINT " + value);
+        }
+    }
+
+    private void handleBranch(Node branchNode) {
+        Element branch = (Element) branchNode;
+        String condition = getElementText(branch, "COND");
+        if (condition != null) {
+            writer.println("IF " + condition + " THEN");
+            // Assuming there are instructions within the branch
+            processInstructions(branch.getChildNodes());
+            writer.println("ELSE");
+            // Assuming there are instructions for else
+            processInstructions(branch.getChildNodes());
+            writer.println("END IF");
+        }
+    }
+
+    private void handleFunctions(Element program) {
+        NodeList functions = program.getElementsByTagName("FUNCTIONS");
+        for (int i = 0; i < functions.getLength(); i++) {
+            Node functionNode = functions.item(i);
+            if (functionNode.getNodeType() == Node.ELEMENT_NODE) {
+                Element function = (Element) functionNode;
+                processFunction(function);
+            }
+        }
+    }
+
+    private void processFunction(Element function) {
+        String funcName = getElementText(function, "FNAME");
+        writer.println("FUNCTION " + funcName + "()");
+        // Handle function body and local variables
+        writer.println("END FUNCTION");
+    }
+
+    private String getElementText(Element parent, String tagName) {
+        NodeList nodeList = parent.getElementsByTagName(tagName);
+        if (nodeList.getLength() > 0) {
+            Node node = nodeList.item(0);
+            if (node != null) {
+                return node.getTextContent();
+            }
+        }
+        return null; // Return null if the tag is not found
+    }
+
+    public static void main(String[] args) {
+        String xmlFilePath = "parse_out.xml"; // Replace with your XML file path
+        CodeGenerator codeGen = new CodeGenerator(xmlFilePath);
+        codeGen.generateBASIC();
+        System.out.println("BASIC program generated successfully.");
     }
 }
