@@ -22,7 +22,13 @@ public class TokenReader {
                     String id = element.getElementsByTagName("ID").item(0).getTextContent();
                     String tokenClass = element.getElementsByTagName("CLASS").item(0).getTextContent();
                     String word = element.getElementsByTagName("WORD").item(0).getTextContent();
-                    Token.TokenType type = Token.TokenType.valueOf(tokenClass.toUpperCase());
+                    Token.TokenType type;
+                    if (tokenClass.equals("reserved_keyword")){
+                        type = Token.TokenType.INPUT;
+                    }else {
+                        type = Token.TokenType.valueOf(tokenClass.toUpperCase());
+                    }
+
                     tokens.add(new Token(type, word));
                 }
             }

@@ -41,6 +41,7 @@ public class Lexer {
     Token token;
     do {
       token = nextToken();
+      System.out.println(token.toString());
       tokens.add(token);
       writeTokenToXml(token); // Write token to the XML file
     } while (token.getType() != Token.TokenType.EOF);
@@ -53,9 +54,11 @@ public class Lexer {
     }
 
     // Skip over whitespace characters
+    int start = pos;
     while (pos < input.length() && Character.isWhitespace(input.charAt(pos))) {
       pos++;
     }
+
 
     // Iterate over all defined token types and match using regex
     for (Token.TokenType type : Token.TokenType.values()) {
@@ -65,9 +68,12 @@ public class Lexer {
 
       Pattern pattern = Pattern.compile("^" + type.getPattern());
       Matcher matcher = pattern.matcher(input.substring(pos));
-
+      //System.out.println(pattern);
+      //System.out.println(input.substring(pos));
       if (matcher.find()) {
+
         String tokenValue = matcher.group();
+
         pos += tokenValue.length(); // move position to end of token
         return new Token(type, tokenValue); // Return matched token
       }
@@ -94,7 +100,11 @@ public class Lexer {
       xmlWriter.write("\t<TOK>\n");
       xmlWriter.write("\t\t<ID>" + tokenId++ + "</ID>\n"); // Increment token ID
       xmlWriter.write("\t\t<CLASS>" + tokenClass + "</CLASS>\n");
-      xmlWriter.write("\t\t<WORD>" + token.getValue() + "</WORD>\n");
+      if(token.getType().equals(Token.TokenType.INPUT_OPERATOR)){
+        xmlWriter.write("\t\t<WORD>input_operator</WORD>\n");
+      }else{
+        xmlWriter.write("\t\t<WORD>" + token.getValue() + "</WORD>\n");
+      }
       xmlWriter.write("\t</TOK>\n");
     } catch (IOException e) {
       e.printStackTrace();
@@ -131,7 +141,7 @@ public class Lexer {
       case RETURN:
         return "RETURN";
       case INPUT:
-        return "reserved_keyword";
+        return "input";
       case VNAME:
         return "VNAME"; // User-defined variable names
       case FNAME:

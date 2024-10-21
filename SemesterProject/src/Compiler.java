@@ -11,7 +11,7 @@ public class Compiler {
         //Scanner scanner = new Scanner(System.in);
         //System.out.print("Enter the input file path: ");
         //String filePath = scanner.nextLine();
-        Lexer lexer = new Lexer("allTest.txt", "Lexer_out.xml");
+        Lexer lexer = new Lexer("RecursiveCalls.txt", "Lexer_out.xml");
         TokenReader tokenReader = new TokenReader("Lexer_out.xml");
         List<Token> tokens = tokenReader.getTokens();
 

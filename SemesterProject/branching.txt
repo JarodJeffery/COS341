@@ -1,0 +1,13 @@
+main
+    num V_a, text V_name,
+begin
+    V_a < input;
+    if grt(V_a, 10) then
+        begin
+            print "Value" ;
+        end
+    else
+        begin
+            print "Valuel" ;
+        end;
+end

@@ -76,9 +76,11 @@ public class Parser {
                     String id = tokenElement.getElementsByTagName("ID").item(0).getTextContent();
                     String tokenClass = tokenElement.getElementsByTagName("CLASS").item(0).getTextContent();
                     String word = tokenElement.getElementsByTagName("WORD").item(0).getTextContent();
-
-                    tokens.add(new Token( Token.TokenType.valueOf(tokenClass.toUpperCase()), word));
-
+                    if (tokenClass.equals("reserved_keyword")){
+                        tokens.add(new Token( Token.TokenType.INPUT, word));
+                    }else {
+                        tokens.add(new Token( Token.TokenType.valueOf(tokenClass.toUpperCase()), word));
+                    }
                 }
             }
         } catch (Exception e) {
@@ -101,7 +103,12 @@ public class Parser {
         if (currentToken.getType().equals(expectedClass)) {
             Element tokenElement = xmlDoc.createElement("TOKEN");
             tokenElement.setAttribute("class", currentToken.getType().name());
-            tokenElement.setAttribute("word", currentToken.getValue());
+            if(currentToken.getType().equals(Token.TokenType.INPUT_OPERATOR)){
+                tokenElement.setAttribute("word", "input_operator");
+            }else{
+                tokenElement.setAttribute("word", currentToken.getValue());
+            }
+
             parentElement.appendChild(tokenElement);
             nextToken(); // Move to the next token
         } else {
@@ -223,8 +230,21 @@ public class Parser {
         } else if (currentToken.getType() == Token.TokenType.ASSIGNMENT) {
             match(Token.TokenType.ASSIGNMENT, assignElement);
             parseTERM(assignElement);
-        } else {
+        } else if(currentToken.getType() == Token.TokenType.INPUT_OPERATOR){
+            match(Token.TokenType.INPUT_OPERATOR, assignElement);
+            parseINPUT(assignElement);
+        }else {
             throw new ParseException("Expected assignment operator");
+        }
+    }
+
+    private void parseINPUT(Element parentElement) {
+        Element vnameElement = xmlDoc.createElement("INPUT");
+        parentElement.appendChild(vnameElement);
+        if (currentToken.getType().equals(Token.TokenType.INPUT)) {
+            match(Token.TokenType.INPUT, vnameElement);  // Expect a variable name token (e.g., V_[a-z])
+        } else {
+            throw new ParseException("Expected 'INPUT' but found: " + currentToken);
         }
     }
 

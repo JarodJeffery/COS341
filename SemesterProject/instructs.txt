@@ -16,8 +16,8 @@ COMMAND -> BRANCH
 COMMAND -> return ATOMIC
 ATOMIC -> VNAME
 ATOMIC -> CONST
-CONST -> String
-CONST -> number
+CONST -> [A-Z][a-z]*{0,7}
+CONST -> -?[0-9]+(\.[0-9]+)?
 ASSIGN -> VNAME < input
 ASSIGN -> VNAME = TERM
 CALL -> FNAME( ATOMIC , ATOMIC , ATOMIC )
