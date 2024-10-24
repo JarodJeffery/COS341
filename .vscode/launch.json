@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "jdk",
+      "request": "launch",
+      "name": "Launch Java App"
+    },
+    {
+      "name": "Attach by com.sun.jdi.SharedMemoryListen",
+      "type": "jdk",
+      "request": "attach",
+      "listen": "${command:jdk.java.attachDebugger.connector.com.sun.jdi.SharedMemoryListen.listen}"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+main
+    num V_input,
+begin
+    V_input < input;
+    print "Here";
+    F_factorial(V_input, 1, 2);
+end
+
+num F_factorial(V_num, V_a2, V_a3)
+{
+    num V_result,
+    num V_a1,
+    num V_b1,
+    begin
+        if eq(V_num, 0) then
+            begin
+                return 1;
+            end
+        else
+            begin
+                F_factorial( 2, 1 , 2 ) ;
+            end ;
+    end
+}
+end

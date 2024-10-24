@@ -1,0 +1,24 @@
+main
+    num V_x1, text V_y2,
+begin
+    skip;
+    V_x1 = V_y2;
+    print V_x1;
+    if eq( V_x1, V_y2 ) then
+        begin
+            print V_y2;
+        end
+    else
+        begin
+            halt;
+        end;
+end
+num F_add( V_a1, V_b2, V_c3 )
+{
+    num V_x3, text V_y4, num V_z5,
+begin
+    V_x3 = add( V_a1, V_b2 );
+    print V_x3;
+end
+}
+end

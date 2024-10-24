@@ -1,0 +1,6 @@
+main
+num V_n,
+begin
+    skip ;
+    return 0 ;
+end
