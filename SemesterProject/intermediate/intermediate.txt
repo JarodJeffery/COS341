@@ -1,0 +1,2 @@
+FUNCTION main (f1) // Scope: 0, Parent Scope: 0
+VAR V_n : num // Internal: v1, Scope: 0, Parent Scope: 0

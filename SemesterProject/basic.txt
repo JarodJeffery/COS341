@@ -1,6 +1,0 @@
-main
-    num V_x1, text V_y2,
-begin
-    V_x1 = 5;
-    print V_x1;
-end

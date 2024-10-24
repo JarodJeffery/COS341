@@ -1,0 +1,6 @@
+main
+    num V_x1, text V_y2,
+begin
+    skip;
+    print V_y2;
+end
